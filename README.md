@@ -30,11 +30,11 @@ URL for Workshop Instructions: <https://rh-aiservices-bu.github.io/fraud-detecti
 | File | Purpose |
 |---|---|
 | `4-train-save.pipeline` | Elyra pipeline: `1_tf` → `2_save` → `2.1_register` (runs on Kubeflow Pipelines) |
-| `5_get_data_train_upload.py` | KFP pipeline source — compile with `./5_build_pipeline.sh` |
-| `5_get_data_train_upload.yaml` | Compiled KFP YAML: download data → train → upload to S3 |
+| `5_kfp_pipeline.py` | KFP pipeline source — compile with `./5_kfp_pipeline.sh` |
+| `5_kfp_pipeline.yaml` | Compiled KFP YAML: download data → train → upload to S3 |
 | `6_torch_distributed_train.ipynb` | KFTO/PyTorch DDP distributed training across 2 nodes |
 | `kfto-scripts/train_pytorch_cpu.py` | PyTorch DDP training script used by `6_torch_distributed_train.ipynb` |
-| `5_build_pipeline.sh` | Installs KFP dependencies and compiles `5_get_data_train_upload.py` to YAML |
+| `5_kfp_pipeline.sh` | Installs KFP dependencies and compiles `5_kfp_pipeline.py` to YAML |
 
 ## Running `2.1_register_experiment.ipynb` — Model Registry setup
 
