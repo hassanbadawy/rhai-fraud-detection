@@ -4,12 +4,38 @@ URL for Workshop Instructions: <https://rh-aiservices-bu.github.io/fraud-detecti
 
 ## Notebook sequence
 
+### Keras path (single-node, quick experiment)
+
 | Notebook | Purpose |
 |---|---|
-| `1_experiment_train.ipynb` | Train the Keras model, export to ONNX, evaluate |
+| `1_tf_experiment_train.ipynb` | Train the Keras/TF model locally, export to ONNX, evaluate |
 | `2_save_model.ipynb` | Upload `models/fraud/1/model.onnx` to S3 |
 | `2.1_register_experiment.ipynb` | Register experiment metadata in RHOAI Model Registry |
 | `3_rest_requests.ipynb` | Test the deployed inference endpoint |
+
+### PyTorch distributed path (multi-node, production scale)
+
+| Notebook | Purpose |
+|---|---|
+| `6.1_torch_distributed_train.ipynb` | Upload CSVs to S3, then run PyTorch DDP training across 2 nodes via KFTO — exports ONNX and uploads to S3 directly |
+| `2.1_register_experiment.ipynb` | Register experiment metadata in RHOAI Model Registry |
+| `3_rest_requests.ipynb` | Test the deployed inference endpoint |
+
+> Both paths produce the same artifact (`s3://models/models/fraud/1/model.onnx`) and converge at `2.1` onward.
+
+### Supporting scripts & pipelines
+
+| File | Purpose |
+|---|---|
+| `4-train-save.pipeline` | Elyra pipeline: `1_tf` → `2_save` → `2.1_register` (runs on Kubeflow Pipelines) |
+| `5_get_data_train_upload.py` | KFP pipeline source — compile with `./5_build_pipeline.sh` |
+| `5_get_data_train_upload.yaml` | Compiled KFP YAML: download data → train → upload to S3 |
+| `6_distributed_training.ipynb` | Ray/Codeflare distributed training — submits `6_train_tf_cpu.py` to a Ray cluster |
+| `6_train_tf_cpu.py` | TensorFlow/Ray training script used by `6_distributed_training.ipynb` |
+| `6_ray_requirements.txt` | Python dependencies installed on Ray workers for `6_train_tf_cpu.py` |
+| `6.1_torch_distributed_train.ipynb` | KFTO/PyTorch DDP distributed training alternative |
+| `kfto-scripts/train_pytorch_cpu.py` | PyTorch DDP training script used by `6.1` |
+| `5_build_pipeline.sh` | Installs KFP dependencies and compiles `5_get_data_train_upload.py` to YAML |
 
 ## Running `2.1_register_experiment.ipynb` — Model Registry setup
 
@@ -43,3 +69,23 @@ https://model-registry-rest.apps.cluster-7hb2t.7hb2t.sandbox670.opentlc.com
 ```
 
 Override this with the `MODEL_REGISTRY_URL` environment variable if your cluster URL differs.
+
+## Note: inference endpoint port mismatch (8080 vs 8888)
+
+The RHOAI dashboard and the InferenceService `status.address.url` display the internal endpoint as:
+
+```
+http://fraud-predictor.fraud-detection.svc.cluster.local:8080
+```
+
+**This port is wrong.** The OVMS container is configured with `--rest_port=8888` and only listens on port **8888**. KServe falls back to `8080` in its status when the ServingRuntime does not explicitly declare `httpDataEndpoint`, causing the dashboard to show an incorrect URL.
+
+Additionally, the `fraud-predictor` Kubernetes service is **headless** (`ClusterIP: None`), meaning there is no NAT or port translation — DNS resolves directly to the pod IP. The port in the URL must always be the actual container port.
+
+**Use port `8888` in all notebooks and client code:**
+
+```
+http://fraud-predictor.fraud-detection.svc.cluster.local:8888
+```
+
+This is already set correctly in `3_rest_requests.ipynb`.

@@ -202,17 +202,17 @@ spec:
               metadata:
                 annotations:
                   opendatahub.io/connection-type: s3
-                  openshift.io/display-name: My Storage
+                  openshift.io/display-name: Models
                 labels:
                   opendatahub.io/dashboard: "true"
                   opendatahub.io/managed: "true"
-                name: my-storage
+                name: models
               data:
                 AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
                 AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
               stringData:
                 AWS_DEFAULT_REGION: us-east-1
-                AWS_S3_BUCKET: my-storage
+                AWS_S3_BUCKET: models
                 AWS_S3_ENDPOINT: ${S4_HOST}
               type: Opaque
               EOF
@@ -284,8 +284,8 @@ spec:
               print('creating pipeline-artifacts bucket')
               if bucket not in [bu["Name"] for bu in s3.list_buckets()["Buckets"]]:
                 s3.create_bucket(Bucket=bucket)
-              bucket = 'my-storage'
-              print('creating my-storage bucket')
+              bucket = 'models'
+              print('creating models bucket')
               if bucket not in [bu["Name"] for bu in s3.list_buckets()["Buckets"]]:
                 s3.create_bucket(Bucket=bucket)
               EOF
@@ -294,7 +294,7 @@ spec:
           envFrom:
             - secretRef:
                 name: s4-credentials
-          image: image-registry.openshift-image-registry.svc:5000/redhat-ods-applications/s2i-generic-data-science-notebook:2024.1
+          image: image-registry.openshift-image-registry.svc:5000/redhat-ods-applications/s2i-generic-data-science-notebook:2025.2
           imagePullPolicy: IfNotPresent
           name: create-buckets
       initContainers:

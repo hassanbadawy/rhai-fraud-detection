@@ -14,7 +14,7 @@ import tensorflow as tf
 import onnx
 import tf2onnx
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, BatchNormalization, Activation
+from tensorflow.keras.layers import Input, Dense, Dropout, BatchNormalization, Activation
 
 import ray
 from ray import train
@@ -95,7 +95,8 @@ def get_class_weights(pyarrow_fs):
 
 def build_model() -> tf.keras.Model:
     model = Sequential()
-    model.add(Dense(32, activation='relu', input_dim=len(feature_columns)))
+    model.add(Input(shape=(len(feature_columns),)))
+    model.add(Dense(32, activation='relu'))
     model.add(Dropout(0.2))
     model.add(Dense(32))
     model.add(BatchNormalization())

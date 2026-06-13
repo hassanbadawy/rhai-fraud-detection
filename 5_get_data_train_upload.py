@@ -23,13 +23,14 @@ def get_data(train_data_output_path: OutputPath(), validate_data_output_path: Ou
 
 @dsl.component(
     base_image="quay.io/modh/runtime-images:runtime-cuda-tensorflow-ubi9-python-3.9-2024a-20240523",
-    packages_to_install=["onnx==1.17.0", "onnxruntime==1.19.2", "tf2onnx==1.16.1"],
+    packages_to_install=["onnx", "onnxruntime", "tf2onnx"],
 )
 def train_model(train_data_input_path: InputPath(), validate_data_input_path: InputPath(), model_output_path: OutputPath()):
     import numpy as np
     import pandas as pd
+    import tensorflow as tf
     from keras.models import Sequential
-    from keras.layers import Dense, Dropout, BatchNormalization, Activation
+    from keras.layers import Input, Dense, Dropout, BatchNormalization, Activation
     from sklearn.model_selection import train_test_split
     from sklearn.preprocessing import StandardScaler
     from sklearn.utils import class_weight
@@ -37,6 +38,10 @@ def train_model(train_data_input_path: InputPath(), validate_data_input_path: In
     import onnx
     import pickle
     from pathlib import Path
+
+    # np.cast was removed in NumPy 2.x; tf2onnx still references it
+    if not hasattr(np, "cast"):
+        np.cast = np.dtype
 
     # Load the CSV data which we will use to train the model.
     # It contains the following fields:
@@ -88,7 +93,8 @@ def train_model(train_data_input_path: InputPath(), validate_data_input_path: In
     # Build the model, the model we build here is a simple fully connected deep neural network, containing 3 hidden layers and one output layer.
 
     model = Sequential()
-    model.add(Dense(32, activation='relu', input_dim=len(feature_indexes)))
+    model.add(Input(shape=(len(feature_indexes),)))
+    model.add(Dense(32, activation='relu'))
     model.add(Dropout(0.2))
     model.add(Dense(32))
     model.add(BatchNormalization())
@@ -110,14 +116,22 @@ def train_model(train_data_input_path: InputPath(), validate_data_input_path: In
                         verbose=True, class_weight=class_weights)
 
     # Save the model as ONNX for easy use of ModelMesh
-    model_proto, _ = tf2onnx.convert.from_keras(model)
+    # Workaround for tf2onnx bug https://github.com/onnx/tensorflow-onnx/issues/2348
+    @tf.function(input_signature=[tf.TensorSpec([None, len(feature_indexes)], tf.float32, name='dense_input')])
+    def model_fn(x):
+        return model(x)
+
+    model_proto, _ = tf2onnx.convert.from_function(
+        model_fn,
+        input_signature=[tf.TensorSpec([None, len(feature_indexes)], tf.float32, name='dense_input')]
+    )
     print(model_output_path)
     onnx.save(model_proto, model_output_path)
 
 
 @dsl.component(
     base_image="quay.io/modh/runtime-images:runtime-cuda-tensorflow-ubi9-python-3.9-2024a-20240523",
-    packages_to_install=["boto3==1.35.55", "botocore==1.35.55"]
+    packages_to_install=["boto3", "botocore"]
 )
 def upload_model(input_model_path: InputPath()):
     import os
@@ -163,7 +177,7 @@ def pipeline():
 
     kubernetes.use_secret_as_env(
         task=upload_model_task,
-        secret_name='my-storage',
+        secret_name='models',
         secret_key_to_env={
             'AWS_ACCESS_KEY_ID': 'AWS_ACCESS_KEY_ID',
             'AWS_SECRET_ACCESS_KEY': 'AWS_SECRET_ACCESS_KEY',

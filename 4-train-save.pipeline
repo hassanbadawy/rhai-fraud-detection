@@ -9,7 +9,7 @@
       "id": "primary",
       "nodes": [
         {
-          "id": "183f2d15-3340-49de-a27c-3f822634db8f",
+          "id": "node-train",
           "type": "execution_node",
           "op": "execute-notebook-node",
           "app_data": {
@@ -19,7 +19,9 @@
               ],
               "include_subdirectories": true,
               "outputs": [
-                "models/fraud/1/model.onnx"
+                "models/fraud/1/model.onnx",
+                "artifact/scaler.pkl",
+                "artifact/test_data.pkl"
               ],
               "env_vars": [],
               "kubernetes_pod_annotations": [],
@@ -28,14 +30,14 @@
               "kubernetes_shared_mem_size": {},
               "kubernetes_tolerations": [],
               "mounted_volumes": [],
-              "filename": "1_experiment_train.ipynb"
+              "filename": "1_tf_experiment_train.ipynb"
             },
             "ui_data": {
-              "label": "1_experiment_train.ipynb",
+              "label": "1_tf_experiment_train.ipynb",
               "image": "/notebook/fraud-detection/fraud-detection/static/elyra/notebook.svg",
               "x_pos": 155,
               "y_pos": 344,
-              "description": "Run notebook file"
+              "description": "Train Keras model, export to ONNX, save artifacts"
             }
           },
           "inputs": [
@@ -43,10 +45,7 @@
               "id": "inPort",
               "app_data": {
                 "ui_data": {
-                  "cardinality": {
-                    "min": 0,
-                    "max": -1
-                  },
+                  "cardinality": { "min": 0, "max": -1 },
                   "label": "Input Port"
                 }
               }
@@ -57,10 +56,7 @@
               "id": "outPort",
               "app_data": {
                 "ui_data": {
-                  "cardinality": {
-                    "min": 0,
-                    "max": -1
-                  },
+                  "cardinality": { "min": 0, "max": -1 },
                   "label": "Output Port"
                 }
               }
@@ -68,7 +64,7 @@
           ]
         },
         {
-          "id": "0b538210-7c25-4233-a538-8c908b6cb6c4",
+          "id": "node-save",
           "type": "execution_node",
           "op": "execute-notebook-node",
           "app_data": {
@@ -82,27 +78,27 @@
               "kubernetes_secrets": [
                 {
                   "env_var": "AWS_ACCESS_KEY_ID",
-                  "name": "my-storage",
+                  "name": "models",
                   "key": "AWS_ACCESS_KEY_ID"
                 },
                 {
                   "env_var": "AWS_SECRET_ACCESS_KEY",
-                  "name": "my-storage",
+                  "name": "models",
                   "key": "AWS_SECRET_ACCESS_KEY"
                 },
                 {
                   "env_var": "AWS_S3_ENDPOINT",
-                  "name": "my-storage",
+                  "name": "models",
                   "key": "AWS_S3_ENDPOINT"
                 },
                 {
                   "env_var": "AWS_DEFAULT_REGION",
-                  "name": "my-storage",
+                  "name": "models",
                   "key": "AWS_DEFAULT_REGION"
                 },
                 {
                   "env_var": "AWS_S3_BUCKET",
-                  "name": "my-storage",
+                  "name": "models",
                   "key": "AWS_S3_BUCKET"
                 }
               ],
@@ -115,8 +111,8 @@
               "label": "2_save_model.ipynb",
               "image": "/notebook/fraud-detection/fraud-detection/static/elyra/notebook.svg",
               "x_pos": 405,
-              "y_pos": 347,
-              "description": "Run notebook file"
+              "y_pos": 344,
+              "description": "Upload models/fraud/1/model.onnx to S3"
             }
           },
           "inputs": [
@@ -124,17 +120,14 @@
               "id": "inPort",
               "app_data": {
                 "ui_data": {
-                  "cardinality": {
-                    "min": 0,
-                    "max": -1
-                  },
+                  "cardinality": { "min": 0, "max": -1 },
                   "label": "Input Port"
                 }
               },
               "links": [
                 {
-                  "id": "361b3b81-4c79-4f11-baa7-f43858119e8f",
-                  "node_id_ref": "183f2d15-3340-49de-a27c-3f822634db8f",
+                  "id": "link-train-to-save",
+                  "node_id_ref": "node-train",
                   "port_id_ref": "outPort"
                 }
               ]
@@ -145,10 +138,91 @@
               "id": "outPort",
               "app_data": {
                 "ui_data": {
-                  "cardinality": {
-                    "min": 0,
-                    "max": -1
-                  },
+                  "cardinality": { "min": 0, "max": -1 },
+                  "label": "Output Port"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "node-register",
+          "type": "execution_node",
+          "op": "execute-notebook-node",
+          "app_data": {
+            "component_parameters": {
+              "dependencies": [],
+              "include_subdirectories": false,
+              "outputs": [],
+              "env_vars": [
+                {
+                  "env_var": "MODEL_REGISTRY_URL",
+                  "value": "https://model-registry-rest.apps.cluster-7hb2t.7hb2t.sandbox670.opentlc.com"
+                },
+                {
+                  "env_var": "MODEL_REGISTRY_PORT",
+                  "value": "443"
+                },
+                {
+                  "env_var": "DATA_CONNECTION",
+                  "value": "models"
+                },
+                {
+                  "env_var": "JUPYTER_USER",
+                  "value": "workshop"
+                }
+              ],
+              "kubernetes_pod_annotations": [],
+              "kubernetes_pod_labels": [],
+              "kubernetes_secrets": [
+                {
+                  "env_var": "MODEL_REGISTRY_TOKEN",
+                  "name": "secret-3rb2d8",
+                  "key": "MODEL_REGISTRY_TOKEN"
+                },
+                {
+                  "env_var": "AWS_S3_BUCKET",
+                  "name": "models",
+                  "key": "AWS_S3_BUCKET"
+                }
+              ],
+              "kubernetes_shared_mem_size": {},
+              "kubernetes_tolerations": [],
+              "mounted_volumes": [],
+              "filename": "2.1_register_experiment.ipynb"
+            },
+            "ui_data": {
+              "label": "2.1_register_experiment.ipynb",
+              "image": "/notebook/fraud-detection/fraud-detection/static/elyra/notebook.svg",
+              "x_pos": 655,
+              "y_pos": 344,
+              "description": "Register experiment metadata in RHOAI Model Registry"
+            }
+          },
+          "inputs": [
+            {
+              "id": "inPort",
+              "app_data": {
+                "ui_data": {
+                  "cardinality": { "min": 0, "max": -1 },
+                  "label": "Input Port"
+                }
+              },
+              "links": [
+                {
+                  "id": "link-save-to-register",
+                  "node_id_ref": "node-save",
+                  "port_id_ref": "outPort"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "id": "outPort",
+              "app_data": {
+                "ui_data": {
+                  "cardinality": { "min": 0, "max": -1 },
                   "label": "Output Port"
                 }
               }

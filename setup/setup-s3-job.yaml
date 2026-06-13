@@ -29,6 +29,9 @@ spec:
             - -ec
             - |-
               echo -n 'Setting up S4 instance and connections'
+              # NOTE: This URL points to the upstream repo. If you forked this project,
+              # replace the URL with your own repo's raw URL, or apply setup-s3-no-sa.yaml directly:
+              #   oc apply -f setup/setup-s3-no-sa.yaml
               oc apply -f https://github.com/rh-aiservices-bu/fraud-detection/raw/main/setup/setup-s3-no-sa.yaml
           command:
             - /bin/bash
