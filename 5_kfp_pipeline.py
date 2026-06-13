@@ -7,7 +7,7 @@ from kfp.dsl import InputPath, OutputPath
 from kfp import kubernetes
 
 
-@dsl.component(base_image="quay.io/modh/runtime-images:runtime-cuda-tensorflow-ubi9-python-3.9-2024a-20240523")
+@dsl.component(base_image="image-registry.openshift-image-registry.svc:5000/redhat-ods-applications/runtime-tensorflow:tensorflow")
 def get_data(train_data_output_path: OutputPath(), validate_data_output_path: OutputPath()):
     import urllib.request
     print("starting download...")
@@ -22,7 +22,7 @@ def get_data(train_data_output_path: OutputPath(), validate_data_output_path: Ou
 
 
 @dsl.component(
-    base_image="quay.io/modh/runtime-images:runtime-cuda-tensorflow-ubi9-python-3.9-2024a-20240523",
+    base_image="image-registry.openshift-image-registry.svc:5000/redhat-ods-applications/runtime-tensorflow:tensorflow",
     packages_to_install=["onnx", "onnxruntime", "tf2onnx"],
 )
 def train_model(train_data_input_path: InputPath(), validate_data_input_path: InputPath(), model_output_path: OutputPath()):
@@ -130,7 +130,7 @@ def train_model(train_data_input_path: InputPath(), validate_data_input_path: In
 
 
 @dsl.component(
-    base_image="quay.io/modh/runtime-images:runtime-cuda-tensorflow-ubi9-python-3.9-2024a-20240523",
+    base_image="image-registry.openshift-image-registry.svc:5000/redhat-ods-applications/runtime-tensorflow:tensorflow",
     packages_to_install=["boto3", "botocore"]
 )
 def upload_model(input_model_path: InputPath()):
