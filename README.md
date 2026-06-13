@@ -17,11 +17,13 @@ URL for Workshop Instructions: <https://rh-aiservices-bu.github.io/fraud-detecti
 
 | Notebook | Purpose |
 |---|---|
-| `6.1_torch_distributed_train.ipynb` | Upload CSVs to S3, then run PyTorch DDP training across 2 nodes via KFTO — exports ONNX and uploads to S3 directly |
+| `6_torch_distributed_train.ipynb` | Upload CSVs to S3, then run PyTorch DDP training across 2 nodes via KFTO — exports ONNX and uploads to S3 directly |
 | `2.1_register_experiment.ipynb` | Register experiment metadata in RHOAI Model Registry |
 | `3_rest_requests.ipynb` | Test the deployed inference endpoint |
 
 > Both paths produce the same artifact (`s3://models/models/fraud/1/model.onnx`) and converge at `2.1` onward.
+
+> **Note:** Ray/Codeflare distributed training was removed. The Codeflare SDK is deprecated as of RHOAI 3.4. Use `6_torch_distributed_train.ipynb` (KFTO) for distributed training instead.
 
 ### Supporting scripts & pipelines
 
@@ -30,11 +32,8 @@ URL for Workshop Instructions: <https://rh-aiservices-bu.github.io/fraud-detecti
 | `4-train-save.pipeline` | Elyra pipeline: `1_tf` → `2_save` → `2.1_register` (runs on Kubeflow Pipelines) |
 | `5_get_data_train_upload.py` | KFP pipeline source — compile with `./5_build_pipeline.sh` |
 | `5_get_data_train_upload.yaml` | Compiled KFP YAML: download data → train → upload to S3 |
-| `6_distributed_training.ipynb` | Ray/Codeflare distributed training — submits `6_train_tf_cpu.py` to a Ray cluster |
-| `6_train_tf_cpu.py` | TensorFlow/Ray training script used by `6_distributed_training.ipynb` |
-| `6_ray_requirements.txt` | Python dependencies installed on Ray workers for `6_train_tf_cpu.py` |
-| `6.1_torch_distributed_train.ipynb` | KFTO/PyTorch DDP distributed training alternative |
-| `kfto-scripts/train_pytorch_cpu.py` | PyTorch DDP training script used by `6.1` |
+| `6_torch_distributed_train.ipynb` | KFTO/PyTorch DDP distributed training across 2 nodes |
+| `kfto-scripts/train_pytorch_cpu.py` | PyTorch DDP training script used by `6_torch_distributed_train.ipynb` |
 | `5_build_pipeline.sh` | Installs KFP dependencies and compiles `5_get_data_train_upload.py` to YAML |
 
 ## Running `2.1_register_experiment.ipynb` — Model Registry setup
