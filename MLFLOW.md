@@ -21,6 +21,22 @@ This document captures lessons learned deploying MLflow via the native RHOAI 3.4
 ### Wrong CRD: MLflowConfig
 `mlflow.kubeflow.org/v1 MLflowConfig` exists on the cluster but **has no controller**. Creating it does nothing. The MLflow operator does not watch this resource. Do not use it.
 
+### Missing `MLFLOW_S3_ENDPOINT_URL` in the notebook
+The MLflow Python client uploads artifacts **directly to S3** using boto3. It does NOT inherit `AWS_S3_ENDPOINT` — it looks for its own variable `MLFLOW_S3_ENDPOINT_URL`. Without it, boto3 constructs virtual-hosted-style URLs like `models.s3.<region>.amazonaws.com` which can never reach a private cluster endpoint.
+
+**Symptom:** `EndpointConnectionError: Could not connect to the endpoint URL: "https://models.s3.local.amazonaws.com/mlflow/..."`
+
+**Fix** — add this to your MLflow setup cell before calling `mlflow.tensorflow.autolog()`:
+```python
+s3_endpoint = os.environ.get("AWS_S3_ENDPOINT")
+if s3_endpoint:
+    os.environ["MLFLOW_S3_ENDPOINT_URL"] = s3_endpoint
+```
+
+Or set `MLFLOW_S3_ENDPOINT_URL` as a workbench environment variable with the same value as `AWS_S3_ENDPOINT`.
+
+---
+
 ### Wrong CRD: MLflow in a project namespace
 `MLflow` is **cluster-scoped** — it has no namespace. Trying to create it in a project namespace fails.
 
@@ -122,6 +138,12 @@ Then in the notebook:
 ```python
 import mlflow
 import os
+
+# Required: copy AWS_S3_ENDPOINT to MLFLOW_S3_ENDPOINT_URL so the MLflow
+# artifact client reaches your cluster S3, not amazonaws.com
+s3_endpoint = os.environ.get("AWS_S3_ENDPOINT")
+if s3_endpoint:
+    os.environ["MLFLOW_S3_ENDPOINT_URL"] = s3_endpoint
 
 mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
 mlflow.set_experiment("fraud-detection")
