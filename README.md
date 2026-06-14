@@ -9,6 +9,7 @@ URL for Workshop Instructions: <https://rh-aiservices-bu.github.io/fraud-detecti
 | Notebook | Purpose |
 |---|---|
 | `1_tf_experiment_train.ipynb` | Train the Keras/TF model locally, export to ONNX, evaluate |
+| `1.1_mlflow_tf_experiment_train.ipynb` | Same as above with MLflow autologging — tracks metrics, hyperparams, model, and ONNX artifact |
 | `2_save_model.ipynb` | Upload `models/fraud/1/model.onnx` to S3 |
 | `2.1_register_experiment.ipynb` | Register experiment metadata in RHOAI Model Registry |
 | `3_rest_requests.ipynb` | Test the deployed inference endpoint |
